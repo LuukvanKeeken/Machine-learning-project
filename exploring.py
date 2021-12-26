@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import tensorflow as tf
+from tensorflow.keras import datasets, layers, models
 
 # Read in data
 data = []
@@ -45,4 +47,29 @@ for i in range(10):
     ax = sns.heatmap(test, cmap='gray_r')
     plt.show()
 
+# Train a very simple CNN on the training data, validate on the test data.
+training_data, test_data = training_data/6.0, test_data/6.0
+training_data = np.reshape(training_data, (1000, 16, 15))
+test_data = np.reshape(test_data, (1000, 16, 15))
 
+model = models.Sequential()
+model.add(layers.Conv2D(31, (2, 2), activation='relu', input_shape=(16, 15, 1)))
+model.add(layers.MaxPooling2D((2, 2)))
+model.add(layers.Conv2D(62, (2, 2), activation='relu'))
+model.add(layers.MaxPooling2D((2, 2)))
+model.add(layers.Conv2D(62, (2, 2), activation='relu'))
+model.add(layers.Flatten())
+model.add(layers.Dense(62, activation='relu'))
+model.add(layers.Dense(10))
+print(model.summary())
+
+model.compile(optimizer='adam',
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+
+history = model.fit(training_data, training_labels, epochs=10, 
+                    validation_data=(test_data, test_labels))
+
+test_loss, test_acc = model.evaluate(test_data,  test_labels, verbose=2)
+
+print(f"Error rate: {(1-test_acc)*100}%")
