@@ -747,8 +747,6 @@ class handCrafted():
         print()
 
 
-
-
 if __name__ == "__main__":
     program = handCrafted()
     program.process()
