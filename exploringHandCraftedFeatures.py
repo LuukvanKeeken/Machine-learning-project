@@ -372,6 +372,13 @@ class handCrafted():
         return ratio
 
     def feature(self, image):
+        lineImage = cv2.ximgproc.thinning(255-image, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)   
+        scale = 30
+        width, height = np.shape(lineImage)
+        largeImage = cv2.resize(lineImage, (width*scale, height*scale), interpolation=cv2.INTER_NEAREST)
+        cv2.imshow("test",largeImage) #Original image
+        cv2.waitKey(0)
+
         # add extra boarder to image
         width, height = np.shape(image)
         column = 255 * np.ones(height)
