@@ -62,6 +62,27 @@ class DataSets:
     def digits_rot(self, rot_range, n_rot):
         return self.rand_rotate(self.dataset, rot_range, n_rot)
 
+    # Returns the digits dataset with n_copies extra copies with random Gaussian noise added
+    def digits_noise(self, n_copies=2, mean=0, var=1):
+        extra_data = np.zeros((len(self.dataset['training_data']) * n_copies, len(self.dataset['training_data'][0])), dtype=int)
+        extra_labels = np.zeros(len(self.dataset['training_labels']) * n_copies, dtype=int)
+
+        counter = 0
+        for i, s in enumerate(self.dataset['training_data']):
+            for j in range(n_copies):
+                noise = np.random.normal(mean, var, s.shape)
+                extra_data[counter] = s + noise
+                extra_labels[counter] = self.dataset['training_labels'][i]
+
+                counter += 1
+
+        return {
+            "training_data" : np.concatenate((self.dataset['training_data'], extra_data)),
+            "training_labels" : np.concatenate((self.dataset['training_labels'], extra_labels)),
+            "test_data" : self.dataset['test_data'],
+            "test_labels" : self.dataset['test_labels']
+            }
+
     # Creates randomly rotated copies of training data
     # rot_range specifies the range of rotation in degrees, e.g. (-10, 10)
     # n_rot specifies the number of extra rotated copies to be added

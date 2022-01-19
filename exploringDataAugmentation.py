@@ -9,12 +9,14 @@ from create_data import *
 datasets = DataSets()
 dat_std = datasets.digits_standard()
 dat_rtd = datasets.rand_rotate(dat_std, (-10,10), 2)
+dat_noise = datasets.digits_noise(n_copies=2)
 
-sets = [dat_std, dat_rtd]
+sets = [dat_std, dat_rtd, dat_noise]
 alpha = 0.5
 counter = 1
 
 for dataset in sets:
+    print("INFO: Length of dataset: {}".format(dataset['training_data'].size))
     training_data = np.reshape(dataset['training_data'], (len(dataset['training_data']), 16, 15))
     training_labels = dataset['training_labels']
     test_data = np.reshape(dataset['test_data'], (len(dataset['test_data']), 16, 15))
