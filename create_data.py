@@ -52,7 +52,7 @@ class DataSets:
         return self.training_data, self.training_labels, self.test_data, self.test_labels
 
     # Returns the digits dataset with n_rot extra rotated copies in the range of degrees rot_range
-    def digits_rot(self, n_copies, rot_range):
+    def digits_rot(self, n_copies=2, rot_range=(-10, 10)):
         # Allocates new arrays for data and labels based on n_rot amount of extra rotated copies
         new_data = np.zeros((len(self.training_data) + len(self.training_data) * n_copies, len(self.training_data[0])), dtype=int)
         new_labels = np.zeros(len(self.training_data) + len(self.training_labels) * n_copies, dtype=int)

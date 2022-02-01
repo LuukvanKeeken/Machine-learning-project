@@ -10,10 +10,6 @@ datasets = DataSets()
 
 training_data, training_labels, testing_data, testing_labels = datasets.digits_rot(n_copies=2, rot_range=(10, 10))
 
-dat_std = datasets.digits_standard()
-dat_rtd = datasets.rand_rotate(dat_std, (-10,10), 2)
-dat_noise = datasets.digits_noise(n_copies=2)
-
 sets = [dat_std, dat_rtd, dat_noise]
 alpha = 0.5
 counter = 1

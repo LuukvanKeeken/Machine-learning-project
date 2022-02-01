@@ -1,5 +1,7 @@
+from distutils.command.build import build
 from tensorflow.keras import Sequential, layers, regularizers, losses
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
+from sklearn.model_selection import train_test_split
 from create_data import *
 
 import numpy as np
@@ -7,16 +9,37 @@ import pandas as pd
 import seaborn as sn
 import matplotlib.pyplot as plt
 
-datasets = DataSets()
-
-x_train, y_train, x_test, y_test = datasets.digits_rot(n_copies=2, rot_range=(-10,10))
-
-# Reshape to work with tf models
-x_train = np.reshape(x_train, (len(x_train), 16, 15))
-x_test = np.reshape(x_test, (len(x_test), 16, 15))
-
 ALPHA = 2.5e-6
 EPOCHS = 25
+
+# Returns model with specified parameters.
+# Note: n_filters determines the number of filters in the input layer
+def build_model(n_filters=32, n_layers=3, act='relu', f_size=(2,2), reg=None, pad='valid'):
+    model = Sequential()
+
+    # Input layer
+    model.add(layers.Conv2D(n_filters, f_size, activation=act, input_shape=(16, 15, 1)))
+    model.add(layers.MaxPooling2D(f_size))
+
+    # Determine number of additional layers to add
+    n_layers -= 1
+    r = range(1, n_layers + 1)
+
+    # Add layers with appropriate number of filters
+    for i in r:
+        model.add(layers.Conv2D(n_filters * 2 ** i, f_size, activation=act, padding=pad))
+        model.add(layers.MaxPooling2D(f_size, padding=pad))
+
+    # Add output layers
+    model.add(layers.Flatten())
+    model.add(layers.Dense(n_filters * 2 ** i, activation=act, activity_regularizer=reg))
+    model.add(layers.Dense(10))
+
+    model.compile(optimizer='adam',
+        loss=losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=['accuracy'])
+
+    return model
 
 # Evaluates specified model with accuracy (acc=true), f1 scores (f1=true), and confusion matrix (cm=true)
 def evaluate(model, testing_data, testing_labels, acc=True, f1=True, cm=True):
@@ -51,34 +74,20 @@ def evaluate(model, testing_data, testing_labels, acc=True, f1=True, cm=True):
     return output
 
 # Tests CNN model with number of filters specified in filter_range
-def test_layer_size(filter_range):
+def test_layer_size(filter_range, x_train, y_train, x_test, y_test):
     accuracy = []
-    
+    n_avg = 1
+
     print("INFO: Testing different number of filters.\n")
-    
-    n_avg = 5
 
     for n in filter_range:
         avg = []
 
         for i in range(n_avg):
             print("INFO: Testing model with {} filters.".format(n))
-            model = Sequential()
-            model.add(layers.Conv2D(n / 2, (2, 2), activation='relu', input_shape=(16, 15, 1)))
-            model.add(layers.MaxPooling2D((2, 2)))
-            model.add(layers.Conv2D(n, (2, 2), activation='relu'))
-            model.add(layers.MaxPooling2D((2, 2)))
-            model.add(layers.Conv2D(n * 2, (2, 2), activation='relu'))
-            model.add(layers.Flatten())
-            model.add(layers.Dense(n, activation='relu', activity_regularizer = regularizers.l2(ALPHA)))
-            model.add(layers.Dense(10))
 
-            model.compile(optimizer='adam',
-                            loss=losses.SparseCategoricalCrossentropy(from_logits=True),
-                            metrics=['accuracy'])
-
+            model = build_model(n_filters=n)
             model.fit(x_train, y_train, epochs=EPOCHS, verbose=0)
-
             avg.append(evaluate(model, x_test, y_test, acc=True, cm=False, f1=False))
 
         accuracy.append(np.average(avg))
@@ -90,9 +99,39 @@ def test_layer_size(filter_range):
     plt.ylim([0,1])
     plt.show()
 
+# Plots the training and testing loss of model over e epochs
+def test_overfitting(model, x_train, y_train, x_test, y_test, e=25):
+    print("INFO: Analyzing overfitting.")
+
+    history = model.fit(x_train, y_train, epochs=e, 
+                            validation_data=(x_test, y_test), 
+                            verbose=0)
+
+    fig, ax = plt.subplots()
+    ax.plot(history.history['loss'])
+    ax.plot(history.history['val_loss'])
+    ax.set_title("Model Loss")
+    ax.set_xlabel("Epochs")
+    ax.set_ylabel("Loss")
+    ax.legend(['Train', 'Test'])
+    plt.show()
+
 def main():
-    f_range = list(range(2, 22 + 2, 2))
-    test_layer_size(f_range)
+    datasets = DataSets()
+    x_train, y_train, x_val, y_val = datasets.digits_rot(n_copies=4, rot_range=(-10,10))
+
+    # Reshape to work with tf models
+    x_train = np.reshape(x_train, (len(x_train), 16, 15))
+    x_test = np.reshape(x_val, (len(x_val), 16, 15))
+
+    x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.5, random_state=1)
+
+    f_range = list(range(1, 10 + 1, 1))
+    # Zero padding is introduced for testing layer sizes > 3
+    model = build_model(n_filters=32, n_layers=3, pad='same')
+
+    test_overfitting(model, x_train, y_train, x_test, y_test, e=25)
+    test_layer_size(f_range, x_train, y_train, x_test, y_test)
 
 main()
 
