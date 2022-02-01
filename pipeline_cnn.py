@@ -118,17 +118,19 @@ def test_overfitting(model, x_train, y_train, x_test, y_test, e=25):
 
 def main():
     datasets = DataSets()
-    x_train, y_train, x_val, y_val = datasets.digits_rot(n_copies=4, rot_range=(-10,10))
+    #x_train, y_train, x_val, y_val = datasets.digits_noise(n_copies=4)
+    x_train, y_train, x_test, y_test = datasets.digits_rot(n_copies=4, rot_range=(-10,10))
+    #x_train, y_train, x_val, y_val = datasets.digits_standard()
 
     # Reshape to work with tf models
     x_train = np.reshape(x_train, (len(x_train), 16, 15))
-    x_test = np.reshape(x_val, (len(x_val), 16, 15))
+    x_test = np.reshape(x_test, (len(x_test), 16, 15))
 
-    x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.5, random_state=1)
+    #x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.5, random_state=1)
 
     f_range = list(range(1, 10 + 1, 1))
     # Zero padding is introduced for testing layer sizes > 3
-    model = build_model(n_filters=32, n_layers=3, pad='same')
+    model = build_model(n_filters=32, n_layers=4, pad='same')
 
     test_overfitting(model, x_train, y_train, x_test, y_test, e=25)
     test_layer_size(f_range, x_train, y_train, x_test, y_test)

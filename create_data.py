@@ -51,29 +51,47 @@ class DataSets:
     def digits_standard(self):
         return self.training_data, self.training_labels, self.test_data, self.test_labels
 
-    # Returns the digits dataset with n_rot extra rotated copies in the range of degrees rot_range
-    def digits_rot(self, n_copies=2, rot_range=(-10, 10)):
-        # Allocates new arrays for data and labels based on n_rot amount of extra rotated copies
-        new_data = np.zeros((len(self.training_data) + len(self.training_data) * n_copies, len(self.training_data[0])), dtype=int)
-        new_labels = np.zeros(len(self.training_data) + len(self.training_labels) * n_copies, dtype=int)
+    # # Returns the digits dataset with n_rot extra rotated copies in the range of degrees rot_range
+    # def digits_rot(self, n_copies=2, rot_range=(-10, 10)):
+    #     # Allocates new arrays for data and labels based on n_rot amount of extra rotated copies
+    #     new_data = np.zeros((len(self.training_data) + len(self.training_data) * n_copies, len(self.training_data[0])), dtype=int)
+    #     new_labels = np.zeros(len(self.training_data) + len(self.training_labels) * n_copies, dtype=int)
 
-        # Fills new arrays with randomly rotated images
+    #     # Fills new arrays with randomly rotated images
+    #     counter = 0
+    #     for i in range(len(self.training_data)):
+    #         # Keeps the original sample before adding rotated versions
+    #         new_data[counter] = self.training_data[i]
+    #         new_labels[counter] = self.training_labels[i]
+    #         counter += 1
+
+    #         # Creates n_rot amount of rotated copies
+    #         for j in range(n_copies):
+    #             image = np.reshape(self.training_data[i], (16,15))
+    #             image_pil = Image.fromarray(image).rotate(np.random.randint(rot_range[0], rot_range[1]))
+    #             new_data[counter] = np.ndarray.flatten(np.array(image_pil))
+    #             new_labels[counter] = self.training_labels[i]
+    #             counter += 1
+
+    #     return new_data, new_labels, self.test_data, self.test_labels
+
+    def digits_rot(self, n_copies=2, rot_range=(-10,10)):
+        extra_data = np.zeros((len(self.training_data) * n_copies, len(self.training_data[0])), dtype=int)
+        extra_labels = np.zeros(len(self.training_labels) * n_copies, dtype=int)
+
         counter = 0
-        for i in range(len(self.training_data)):
-            # Keeps the original sample before adding rotated versions
-            new_data[counter] = self.training_data[i]
-            new_labels[counter] = self.training_labels[i]
-            counter += 1
-
-            # Creates n_rot amount of rotated copies
-            for j in range(n_copies):
-                image = np.reshape(self.training_data[i], (16,15))
+        for i, s in enumerate(self.training_data):
+            for n in range(n_copies):
+                image = np.reshape(s, (16,15))
                 image_pil = Image.fromarray(image).rotate(np.random.randint(rot_range[0], rot_range[1]))
-                new_data[counter] = np.ndarray.flatten(np.array(image_pil))
-                new_labels[counter] = self.training_labels[i]
-                counter += 1
+                image = np.ndarray.flatten(np.array(image_pil))
+                extra_data[counter] = image
+                extra_labels[counter] = self.training_labels[i]
 
-        return new_data, new_labels, self.test_data, self.test_labels
+
+                counter += 1
+        
+        return extra_data, extra_labels, self.training_data, self.training_labels
 
     # Returns the digits dataset with n_copies extra copies with random Gaussian noise added
     def digits_noise(self, n_copies=2, mean=0, var=1):
