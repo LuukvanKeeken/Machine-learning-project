@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import random
 import cv2
-
+from sklearn.decomposition import PCA
+from sklearn.mixture import GaussianMixture
 import scipy.stats as stats
 import math 
 import tensorflow as tf
@@ -49,7 +50,14 @@ class handCrafted():
             self.training_labels += [i for j in range(100)]
         self.training_labels = np.asarray(self.training_labels)
         test_labels = self.training_labels
-   
+    
+    def plot_digits(self, data):
+        fig, ax = plt.subplots(10, 10, figsize=(8, 8), subplot_kw=dict(xticks=[], yticks=[]))
+        fig.subplots_adjust(hspace=0.05, wspace=0.05)
+        for i, axi in enumerate(ax.flat):
+            im = axi.imshow(data[i].reshape(16, 15), cmap='binary')
+            #im.set_clim(0, 16)
+        plt.show()
 
     def process(self):
         # TODO: standard mcp https://www.machinecurve.com/index.php/2019/07/27/how-to-create-a-basic-mlp-classifier-with-the-keras-sequential-api/
@@ -57,15 +65,90 @@ class handCrafted():
         #featureVector = self.featureVector(emptyImage)
         samples = 100 # 100 for full training data set
 
-        # number of input features
-        #numberX = len(featureVector)
-        # number of hidden nodes
-        #numberH = numberX + 1
-        # number of output nodes
         numberY = 10
 
         featureResult = np.zeros((10,100))
 
+        # dimension reduction
+        print(self.training_data.shape)
+
+
+        scaledData = self.training_data.copy()
+        scaledData *= int(255/scaledData.max())
+        scaledData = scaledData.astype(np.uint8)
+        #scaledData = (255-scaledData)
+        data = scaledData
+        #pca = PCA(0.99, whiten=True)
+        #data = pca.fit_transform(self.training_data)
+        #data = self.training_data
+        #print(data.shape)
+
+        #self.plot_digits(data[0:100])
+
+        # MoG per class.
+        parameters = []
+        models = []
+        for i in range(10):
+            start = i*100
+            end = start + 100
+            classDataset = data[start:end]
+            #n_components = np.arange(1, 6, 1)
+            #models = [GaussianMixture(n, covariance_type='full', random_state=0) for n in n_components]
+            #aics = [model.fit(classDataset).aic(classDataset) for model in models]
+            #plt.plot(n_components, aics)
+            #plt.show()
+            # Per class, 2 gaussians has lowes AIC
+            gmm = GaussianMixture(2, covariance_type='full', random_state=0)
+            gmm.fit(classDataset) 
+            models.append(gmm.copy())
+            #data_new = gmm.sample(100)[0]
+            #print(data_new.shape)
+            #digits_new = pca.inverse_transform(data_new)
+            #digits_new = data_new
+            #self.plot_digits(digits_new)
+            #print()
+        
+        for i in range(10):
+            testIndex = random.randint(0,1000)
+            image = data[testIndex]
+            realLabel = int(testIndex/100)
+            predictions = []
+            for model in range(len(models)):
+                image = image.reshape(1,-1)
+                prediction = models[model].predict_proba(image)
+                predictions.append(prediction)
+                print()
+            print()
+        print()
+
+
+
+        
+
+        # MoG for all classes combined.
+        #n_components = np.arange(10, 40, 2)
+        #models = [GaussianMixture(n, covariance_type='full', random_state=0) for n in n_components]
+        #aics = [model.fit(data).aic(data) for model in models]
+        #plt.plot(n_components, aics)
+        #plt.show() 
+        # without PCS 20 components looks best
+        # With 99% PCA ... components looks best to minimize the AIC
+
+        gmm = GaussianMixture(20, covariance_type='full', random_state=0)
+        gmm.fit(data) 
+        data_new = gmm.sample(100)[0]
+        print(data_new.shape)
+        #digits_new = pca.inverse_transform(data_new)
+        digits_new = data_new
+        self.plot_digits(digits_new)
+
+
+
+
+                
+            
+
+        
         # Plot first digit for each class in training data.
         for j in range(100):
             for i in range(10):
@@ -83,46 +166,6 @@ class handCrafted():
 
 
 
-
-
-
-        #print(y[500])
-        # random weights
-        #W1 = np.random.rand(numberX, numberH)
-        #W2 = np.random.rand(numberH, numberY)
-
-        # loss = []
-        # epochs = 10
-
-        # for i in range(epochs):  
-        #     m = len(X)
-        #     output, A1 = self.forward(X, W1, W2)
-        #     iter_loss=(1/(2*m))*np.sum((y-output)**2)
-        #     loss.append(iter_loss)
-        #     W1, W2 = self.backward(X, y, A1, output, W1, W2)
-
-        # output, A1 = self.forward(X, W1, W2)
-        # for i in range(len(output)):
-        #     indexMax = np.argmax(output[i])
-        #     for j in range(len(output[0])):
-        #         if j == indexMax:
-        #             output[i][j] = 1
-        #         else:
-        #             output[i][j] = 0
-
-
-
-        # X = np.zeros((10*samples, numberX))
-        # y = np.zeros((10*samples, numberY))
-        # for j in range(samples):
-        #     for i in range(numberY):
-        #         index = samples*i + j
-        #         imageX = np.reshape(self.training_data[index], (16,15))
-        #         inputX = self.featureVector(imageX)
-        #         output, A1 = self.forward(X, W1, W2)
-        #         X[index] = inputX
-        #         y[index][self.training_labels[index]] = 1
-    
  
 
     def featureVector(self, image):
