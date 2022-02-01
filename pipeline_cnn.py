@@ -100,12 +100,12 @@ def test_layer_size(filter_range, x_train, y_train, x_test, y_test):
     plt.show()
 
 # Plots the training and testing loss of model over e epochs
-def test_overfitting(model, x_train, y_train, x_test, y_test, e=25):
+def test_overfitting(model, x_train, y_train, x_test, y_test, e=25, v=0):
     print("INFO: Analyzing overfitting.")
 
     history = model.fit(x_train, y_train, epochs=e, 
                             validation_data=(x_test, y_test), 
-                            verbose=0)
+                            verbose=v)
 
     fig, ax = plt.subplots()
     ax.plot(history.history['loss'])
@@ -130,10 +130,12 @@ def main():
 
     f_range = list(range(1, 10 + 1, 1))
     # Zero padding is introduced for testing layer sizes > 3
-    model = build_model(n_filters=32, n_layers=4, pad='same')
+    model = build_model(n_filters=32, n_layers=3, pad='same')
 
-    test_overfitting(model, x_train, y_train, x_test, y_test, e=25)
-    test_layer_size(f_range, x_train, y_train, x_test, y_test)
+    test_overfitting(model, x_train, y_train, x_test, y_test, e=25, v=0)
+    #test_layer_size(f_range, x_train, y_train, x_test, y_test)
+
+    model.summary()
 
 main()
 
