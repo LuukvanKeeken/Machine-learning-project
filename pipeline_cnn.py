@@ -1,7 +1,8 @@
+from calendar import EPOCH
 from distutils.command.build import build
 from tensorflow.keras import Sequential, layers, regularizers, losses
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 from create_data import *
 
 import numpy as np
@@ -41,8 +42,33 @@ def build_model(n_filters=32, n_layers=3, act='relu', f_size=(2,2), reg=None, pa
 
     return model
 
+# Performs k fold cross-validation
+def cross_validation(model, x_val, y_val, k=3, e=25):
+    kf = KFold(n_splits=k, shuffle=True, random_state=1)
+    fold = 1
+    accuracies = []
+
+    for train_index, test_index in kf.split(x_val):
+        x_train, x_test = x_val[train_index], x_val[test_index]
+        y_train, y_test = y_val[train_index], y_val[test_index]
+
+        model.fit(x_train, y_train, epochs=e, verbose=0)
+        accuracy = evaluate(model, x_test, y_test, acc=True, f1=False, cm=False)
+        accuracies.append(accuracy)
+
+        print("INFO: Fold {} completed with accuracy: {}".format(fold, accuracy))
+
+        fold += 1
+
+    average = np.average(accuracies)
+
+    print("INFO: {} fold cross-validation completed with average accuracy: {}".format(k, average))
+
+    return average
+
 # Evaluates specified model with accuracy (acc=true), f1 scores (f1=true), and confusion matrix (cm=true)
-def evaluate(model, testing_data, testing_labels, acc=True, f1=True, cm=True):
+# Requires a pre-trained model
+def evaluate(model, testing_data, testing_labels, acc=True, f1=True, cm=True, print=False):
     labels = np.unique(testing_labels)
 
     predictions = model.predict(testing_data)
@@ -54,13 +80,15 @@ def evaluate(model, testing_data, testing_labels, acc=True, f1=True, cm=True):
 
     output = []
 
-    if(acc):
-        print("INFO: Total accuracy is: {}\n".format(accuracy))
+    if acc:
+        if print:
+            print("INFO: Total accuracy is: {}\n".format(accuracy))
         output.append(accuracy)
-    if(f1):
-        print("INFO: F1 scores: {}".format(f1_scores))
+    if f1:
+        if print:
+            print("INFO: F1 scores: {}".format(f1_scores))
         output.append(f1_scores)
-    if(cm):
+    if cm:
         c_matrix = c_matrix / c_matrix.astype(float).sum(axis=1)
         df_cm = pd.DataFrame(c_matrix, index = labels, columns = labels)
 
@@ -71,7 +99,10 @@ def evaluate(model, testing_data, testing_labels, acc=True, f1=True, cm=True):
         plt.xlabel("Predicted Labels")
         plt.show()
 
-    return output
+    if len(output) == 1:
+        return output[0]
+    else:
+        return output
 
 # Tests CNN model with number of filters specified in filter_range
 def test_layer_size(filter_range, x_train, y_train, x_test, y_test):
@@ -119,7 +150,7 @@ def test_overfitting(model, x_train, y_train, x_test, y_test, e=25, v=0):
 def main():
     datasets = DataSets()
     #x_train, y_train, x_val, y_val = datasets.digits_noise(n_copies=4)
-    x_train, y_train, x_test, y_test = datasets.digits_rot(n_copies=4, rot_range=(-10,10))
+    x_train, y_train, x_test, y_test = datasets.digits_rot(n_copies=10, rot_range=(-10,10))
     #x_train, y_train, x_val, y_val = datasets.digits_standard()
 
     # Reshape to work with tf models
@@ -130,12 +161,13 @@ def main():
 
     f_range = list(range(1, 10 + 1, 1))
     # Zero padding is introduced for testing layer sizes > 3
-    model = build_model(n_filters=32, n_layers=3, pad='same')
+    model = build_model(n_filters=32, n_layers=2, pad='valid')
 
-    test_overfitting(model, x_train, y_train, x_test, y_test, e=25, v=0)
+    #test_overfitting(model, x_train, y_train, x_test, y_test, e=50, v=1)
     #test_layer_size(f_range, x_train, y_train, x_test, y_test)
+    cross_validation(model, x_test, y_test, k=5, e=20)
 
-    model.summary()
+    #model.summary()
 
 main()
 
