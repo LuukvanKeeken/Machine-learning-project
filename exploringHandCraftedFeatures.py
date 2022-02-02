@@ -8,8 +8,8 @@ from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 import scipy.stats as stats
 import math 
-import tensorflow as tf
-from tensorflow.keras import datasets, layers, models
+#import tensorflow as tf
+#from tensorflow.keras import datasets, layers, models
 
 class handCrafted():
 
@@ -49,81 +49,83 @@ class handCrafted():
         for i in range(10):
             self.training_labels += [i for j in range(100)]
         self.training_labels = np.asarray(self.training_labels)
-        test_labels = self.training_labels
+        self.test_labels = self.training_labels
     
     def plot_digits(self, data):
         fig, ax = plt.subplots(10, 10, figsize=(8, 8), subplot_kw=dict(xticks=[], yticks=[]))
         fig.subplots_adjust(hspace=0.05, wspace=0.05)
         for i, axi in enumerate(ax.flat):
             im = axi.imshow(data[i].reshape(16, 15), cmap='binary')
-            #im.set_clim(0, 16)
         plt.show()
 
     def process(self):
-        # TODO: standard mcp https://www.machinecurve.com/index.php/2019/07/27/how-to-create-a-basic-mlp-classifier-with-the-keras-sequential-api/
-        emptyImage = np.zeros((16,15))
-        #featureVector = self.featureVector(emptyImage)
-        samples = 100 # 100 for full training data set
-
-        numberY = 10
-
-        featureResult = np.zeros((10,100))
-
-        # dimension reduction
-        print(self.training_data.shape)
-
-
+        
         scaledData = self.training_data.copy()
         scaledData *= int(255/scaledData.max())
         scaledData = scaledData.astype(np.uint8)
-        #scaledData = (255-scaledData)
         data = scaledData
+        
         #pca = PCA(0.99, whiten=True)
         #data = pca.fit_transform(self.training_data)
-        #data = self.training_data
-        #print(data.shape)
+        #data = scaledData #self.training_data
 
-        #self.plot_digits(data[0:100])
+        #n_components = np.arange(14, 30, 1)
+        #models = [GaussianMixture(n, covariance_type='full', random_state=0) for n in n_components]
+        #aics = [model.fit(data).aic(data) for model in models]
+        #plt.plot(n_components, aics)
+        #plt.show()
 
-        # MoG per class.
-        parameters = []
-        models = []
-        for i in range(10):
-            start = i*100
-            end = start + 100
-            classDataset = data[start:end]
-            #n_components = np.arange(1, 6, 1)
-            #models = [GaussianMixture(n, covariance_type='full', random_state=0) for n in n_components]
-            #aics = [model.fit(classDataset).aic(classDataset) for model in models]
-            #plt.plot(n_components, aics)
-            #plt.show()
-            # Per class, 2 gaussians has lowes AIC
-            gmm = GaussianMixture(2, covariance_type='full', random_state=0)
-            gmm.fit(classDataset) 
-            models.append(gmm.copy())
-            #data_new = gmm.sample(100)[0]
-            #print(data_new.shape)
-            #digits_new = pca.inverse_transform(data_new)
-            #digits_new = data_new
-            #self.plot_digits(digits_new)
-            #print()
+        components = 20
+        gmm = GaussianMixture(n_components=components,
+                                covariance_type='full', 
+                                tol=1e-10, # only effect when 0
+                                reg_covar=1e-10, #default: 1e-06 
+                                max_iter=100, 
+                                n_init=20, # higher is better change on good model
+                                init_params='kmeans', 
+                                weights_init=None, 
+                                means_init=None, 
+                                precisions_init=None, 
+                                random_state=None, 
+                                warm_start=False, 
+                                verbose=1,
+                                verbose_interval=10)
+        gmm.fit(data) 
         
-        for i in range(10):
-            testIndex = random.randint(0,1000)
-            image = data[testIndex]
-            realLabel = int(testIndex/100)
-            predictions = []
-            for model in range(len(models)):
-                image = image.reshape(1,-1)
-                prediction = models[model].predict_proba(image)
-                predictions.append(prediction)
-                print()
-            print()
-        print()
+        # find labels by the model
+        labels = np.zeros((components, 10))
+        for i in range(1000):
+            realLabel = self.training_labels[i]
+            image = data[i]
+            image = image.reshape(1,-1)
+            classPredictions = int(gmm.predict(image))
+            labels[classPredictions][realLabel] += 1
+        modelLabels = [0] * components
+        for index in range(components):
+            mostCount = np.argmax(labels[index])
+            modelLabels[index] = mostCount
+
+        # test on test data
+        testData = self.test_data.copy()
+        testData *= int(255/testData.max())
+        testData = testData.astype(np.uint8)
+        testPredictions = []
+        misclassifications = 0
+        for i in range(1000):
+            image = testData[i].reshape(1,-1)
+            prediction = modelLabels[int(gmm.predict(image))]
+            testPredictions.append([self.test_labels[i], prediction])
+            if prediction != self.test_labels[i]:
+                misclassifications+=1
+        print(str(1-(misclassifications/1000)))
+        return
 
 
+            
 
-        
+        # Create arrays containing the labels that correspond to
+        # the vectors in the training and testing sets.
+
 
         # MoG for all classes combined.
         #n_components = np.arange(10, 40, 2)
@@ -132,7 +134,7 @@ class handCrafted():
         #plt.plot(n_components, aics)
         #plt.show() 
         # without PCS 20 components looks best
-        # With 99% PCA ... components looks best to minimize the AIC
+        # With 99% PCA 12 components looks best to minimize the AIC
 
         gmm = GaussianMixture(20, covariance_type='full', random_state=0)
         gmm.fit(data) 
@@ -774,11 +776,36 @@ class handCrafted():
         # else:
         #     result = random.random()
 
-        
+    def plotExperimentResult(self,experimentResult):
+        #x = np.linspace(-0.4, 1.5, 100)  
+        plots = 10
+
+        fig, ax = plt.subplots(2, 5, figsize=(8, 8), subplot_kw=dict(xticks=[], yticks=[]))
+        fig.subplots_adjust(hspace=0.05, wspace=0.05)
+        for i, axi in enumerate(ax.flat):
+            #im = axi.imshow(data[i].reshape(16, 15), cmap='binary')
+            featureResult = experimentResult[i]
+
+            #for featureResult in experimentResult:   
+            #print(np.min(featureResult))
+            #print(np.max(featureResult))
+            bins = 50
+            x = np.linspace(0.0, 1.0, bins)
+            for i in range(10):
+                #mu = np.average(featureResult[i])
+                #sigma = np.std(featureResult[i])
+                #plt.plot(x, stats.norm.pdf(x, mu, sigma), label = str(i))
+                
+                digit =  featureResult[i]
+                values = np.histogram(digit, bins, (0.0, 1.0))[0]
+                plt.plot(x, values, label = str(i))
+
+        plt.legend()
+        plt.show()
+        print()    
 
     def plotFeatureResult(self,featureResult):
-        #x = np.linspace(-0.4, 1.5, 100)
-        
+        #x = np.linspace(-0.4, 1.5, 100)     
         print(np.min(featureResult))
         print(np.max(featureResult))
         bins = 50
