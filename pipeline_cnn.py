@@ -42,7 +42,7 @@ def build_model(n_filters=32, n_layers=3, act='relu', f_size=(2,2), reg=None, pa
 
     return model
 
-# Performs k fold cross-validation
+# Performs k fold cross-validation with k folds with e epochs for each fold
 def cross_validation(model, x_val, y_val, k=3, e=25):
     kf = KFold(n_splits=k, shuffle=True, random_state=1)
     fold = 1
@@ -150,12 +150,12 @@ def test_overfitting(model, x_train, y_train, x_test, y_test, e=25, v=0):
 def main():
     datasets = DataSets()
     #x_train, y_train, x_val, y_val = datasets.digits_noise(n_copies=4)
-    x_train, y_train, x_test, y_test = datasets.digits_rot(n_copies=10, rot_range=(-10,10))
+    x_train, y_train = datasets.digits_rot(n_copies=10, rot_range=(-10,10))
     #x_train, y_train, x_val, y_val = datasets.digits_standard()
 
     # Reshape to work with tf models
     x_train = np.reshape(x_train, (len(x_train), 16, 15))
-    x_test = np.reshape(x_test, (len(x_test), 16, 15))
+    #x_test = np.reshape(x_test, (len(x_test), 16, 15))
 
     #x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.5, random_state=1)
 
@@ -165,7 +165,7 @@ def main():
 
     #test_overfitting(model, x_train, y_train, x_test, y_test, e=50, v=1)
     #test_layer_size(f_range, x_train, y_train, x_test, y_test)
-    cross_validation(model, x_test, y_test, k=5, e=20)
+    cross_validation(model, x_train, y_train, k=5, e=20)
 
     #model.summary()
 
