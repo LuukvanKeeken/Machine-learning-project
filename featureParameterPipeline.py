@@ -5,10 +5,13 @@ import cv2
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 import math
+from create_data import DataSets
+from HCFeatures import HCFeatures
 
 class featurePipeline():
 
     def __init__(self):
+        self.mogModel = None
         # Read in data
         data = []
         with open('mfeat-pix.txt') as f:
@@ -87,8 +90,8 @@ class featurePipeline():
             
         #for i, axi in enumerate(ax.flat):
         #    axi.set_ylim(0, maxY)
-        for i in [2, 3]:
-            plt.delaxes(ax.flatten()[i])
+        # for i in [2, 3]:
+        #     plt.delaxes(ax.flatten()[i])
         #plt.legend()
         plt.tick_params(axis='both', which='major', labelsize=5)
         
@@ -99,8 +102,8 @@ class featurePipeline():
 
     def pipeline(self):
         experimentResults = []
-        
-        if True:
+        #self.trainMoG()
+        if False:
             for experiment in range(2):
                 featureResult = np.zeros((10,100))
                 value = experiment
@@ -116,8 +119,19 @@ class featurePipeline():
                 experimentResults.append([str(value),featureResult])
             self.plotExperimentResult(experimentResults)
         
-        if False:
-            featuresResult = np.zeros((6, 10,100))
+        if True:
+            createData = DataSets()
+            dataset = createData.digits_standard()
+            trainingData = dataset["training_data"], dataset["training_labels"]
+            
+            features = HCFeatures()
+            features.fit(trainingData)
+
+            for _, predictX in enumerate(trainingData[0]):
+                featureVector = features.predict(predictX)
+                print()
+
+            featuresResult = np.zeros((7, 10,100))
             for j in range(100):
                 for i in range(10):
                     index = 100*i + j
@@ -131,17 +145,19 @@ class featurePipeline():
                     featuresResult[3, i,j] += self.featureLaplacian(image.copy()) # No parameter required
                     featuresResult[4, i,j] += self.featureFourier(image.copy()) # looks random, but may be usefull
                     featuresResult[5, i,j] += self.featureVerticalPolyRow(image.copy())
+                    featuresResult[6, i,j] += self.featureMoG(image.copy())
 
             experimentResults.append(["horizontal symmetry x=3",featuresResult[0]])
             experimentResults.append(["horizontal symmetry x=8",featuresResult[1]])
             experimentResults.append(["islands",featuresResult[2]])
             experimentResults.append(["Laplacian",featuresResult[3]])
             experimentResults.append(["Fourier",featuresResult[4]])
-            experimentResults.append(["verticalPolyRow",featuresResult[5]])    
+            experimentResults.append(["verticalPolyRow",featuresResult[5]])
+            experimentResults.append(["MoG",featuresResult[6]])
             self.plotExperimentResult(experimentResults)
         
         if False:
-            gmm, modelLabels = self.trainMoG()
+            self.trainMoG()
             good = 0
             for j in range(100):
                 for i in range(10):
@@ -150,14 +166,14 @@ class featurePipeline():
                     image *= int(255/image.max())
                     image = image.astype(np.uint8)
                     image = (255-image)
-                    classification = self.HCtree(image, gmm, modelLabels)
+                    classification = self.HCtree(image)
                     if classification == i:
                         good +=1
             print(str(good/1000))
                     
         print()
 
-    def HCtree(self, image, gmm, modelLabels):
+    def HCtree(self, image):
         feature0 = self.featureHorizontalSymmetry(image.copy(), xParameter = 3)
         feature1 = self.featureHorizontalSymmetry(image.copy(), xParameter = 8)
         feature2 = self.featureIslands(image.copy()) # No parameter required
@@ -182,7 +198,7 @@ class featurePipeline():
                         digit = 4
                     else:
                         # digit 2, 3, 5
-                        digit = self.predictMoG(image, gmm, modelLabels)
+                        digit = self.featureMoG(image)
                         print()          
         else:
             # 0, 6, 9
@@ -196,11 +212,12 @@ class featurePipeline():
 
         return digit
 
-    def predictMoG(self, image, gmm, modelLabels):
+    def featureMoG(self, image):
+        gmm, modelLabels = self.mogModel
         image = (255-image)
         image = image.reshape(1,-1)
         prediction = modelLabels[int(gmm.predict(image))]
-        return prediction
+        return prediction/10
 
     def trainMoG(self):
         scaledData = self.training_data.copy()
@@ -236,7 +253,8 @@ class featurePipeline():
         for index in range(components):
             mostCount = np.argmax(labels[index])
             modelLabels[index] = mostCount
-        return gmm, modelLabels
+        self.mogModel = gmm, modelLabels
+        return
 
 
     def featureTopCurve(self,image):
