@@ -121,13 +121,14 @@ class featurePipeline():
         
         if True:
             createData = DataSets()
-            dataset = createData.digits_standard()
-            trainingData = dataset["training_data"], dataset["training_labels"]
-            
+            trainingData = createData.digits_standard()
+   
             features = HCFeatures()
             features.fit(trainingData)
 
-            for _, predictX in enumerate(trainingData[0]):
+            testingX, testingY = createData.digits_testing()
+
+            for _, predictX in enumerate(testingX):
                 featureVector = features.predict(predictX)
                 print()
 
