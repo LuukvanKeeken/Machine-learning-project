@@ -1,7 +1,11 @@
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
+
 
 
 class FeatureMaker:
@@ -9,35 +13,39 @@ class FeatureMaker:
         self.image = image
         self.trainSamples = trainSamples
         self.testSamples = testSamples
+        self.trainLength = len(trainSamples)
+        self.testLength = len(testSamples)
+        self.meanImages = np.zeros((240, 10))
 
-    def meanNumberFeature(self):
-        meanTrainImages = np.zeros((240, 10))  # Generate the mean numbers
+    
+    def createMeanImages(self, trainingImages):
         for i in range(10):
             for j in range(240):
-                meanTrainImages[j, i] = np.mean(trainSamples[i * 100:(i + 1) * 100, j])
-
-        trainFeatures = np.zeros((1000, 10), dtype=int)
-        for i in range(1000):  # Create the training feature vectors using the mean numbers and the training samples
+                self.meanImages[j, i] = np.mean(trainingImages[i * 100:(i + 1) * 100, j])
+                
+    def meanNumberFeature(self):
+        trainFeatures = np.zeros((self.trainLength, 10), dtype=int)
+        for i in range(self.trainLength):  # Create the training feature vectors using the mean numbers and the training samples
             for j in range(10):
-                trainFeatures[i, j] = np.dot(trainSamples[i], meanTrainImages[:, j])
+                trainFeatures[i, j] = np.dot(self.trainSamples[i], self.meanImages[:, j])
 
-        testFeatures = np.zeros((1000, 10), dtype=int)
-        for i in range(1000):  # Create the testing feature vectors using the mean numbers and the testing samples
+        testFeatures = np.zeros((self.testLength , 10), dtype=int)
+        for i in range(self.testLength):  # Create the testing feature vectors using the mean numbers and the testing samples
             for j in range(10):
-                testFeatures[i, j] = np.dot(testSamples[i], meanTrainImages[:, j])
+                testFeatures[i, j] = np.dot(self.testSamples[i], self.meanImages[:, j])
 
         return trainFeatures, testFeatures
 
     def islandsFeature(self):
-        trainFeatures = np.zeros(1000, dtype=int)
-        testFeatures = np.zeros(1000, dtype=int)
-        for i in range(1000):
+        trainFeatures = np.zeros(self.trainLength, dtype=int)
+        testFeatures = np.zeros(self.testLength, dtype=int)
+        for i in range(self.trainLength):
             self.image = np.zeros((16, 15), dtype=int)
             count = 0
             idx = 0
             for row in range(16):
                 for col in range(15):
-                    self.image[row, col] = trainSamples[i, idx]
+                    self.image[row, col] = self.trainSamples[i, idx]
                     idx += 1
 
             for row in range(16):
@@ -48,13 +56,13 @@ class FeatureMaker:
 
             trainFeatures[i] = count
 
-        for i in range(1000):
+        for i in range(self.testLength):
             self.image = np.zeros((16, 15), dtype=int)
             count = 0
             idx = 0
             for row in range(16):
                 for col in range(15):
-                    self.image[row, col] = testSamples[i, idx]
+                    self.image[row, col] = self.testSamples[i, idx]
                     idx += 1
 
             for row in range(16):
@@ -83,13 +91,13 @@ class FeatureMaker:
         self.DFS(i + 1, j + 1)
 
     def meanShadeFeature(self):
-        trainFeatures = np.zeros(1000, dtype=int)
-        for i in range(1000):  # Create the training feature vectors using the mean numbers and the training samples
-            trainFeatures[i] = np.average(trainSamples[i])
+        trainFeatures = np.zeros(self.trainLength, dtype=int)
+        for i in range(self.trainLength):  # Create the training feature vectors using the mean numbers and the training samples
+            trainFeatures[i] = np.average(self.trainSamples[i])
 
-        testFeatures = np.zeros(1000, dtype=int)
-        for i in range(1000):  # Create the testing feature vectors using the mean numbers and the testing samples
-            testFeatures[i] = np.average(testSamples[i])
+        testFeatures = np.zeros(self.testLength, dtype=int)
+        for i in range(self.testLength):  # Create the testing feature vectors using the mean numbers and the testing samples
+            testFeatures[i] = np.average(self.testSamples[i])
 
         trainFeatures = trainFeatures.reshape(-1, 1)
         testFeatures = testFeatures.reshape(-1, 1)
@@ -99,19 +107,25 @@ class FeatureMaker:
         numberTrainFeatures, numberTestFeatures = self.meanNumberFeature()
         shadeTrainFeatures, shadeTestFeatures = self.meanShadeFeature()
         islandTrainFeatures, islandTestFeatures = self.islandsFeature()
-        trainFeatures = np.zeros((1000, 12), dtype=int)
-        testFeatures = np.zeros((1000, 12), dtype=int)
+        trainFeatures = np.zeros((self.trainLength, 12), dtype=int)
+        testFeatures = np.zeros((self.testLength, 12), dtype=int)
 
-        for i in range(1000):
+        for i in range(self.trainLength):
             for j in range(12):
                 if j == 0:
-                    trainFeatures[i, j] = shadeTestFeatures[i]
-                    testFeatures[i, j] = shadeTrainFeatures[i]
+                    trainFeatures[i, j] = shadeTrainFeatures[i]
                 elif j == 1:
-                    trainFeatures[i, j] = islandTestFeatures[i]
-                    testFeatures[i, j] = islandTrainFeatures[i]
+                    trainFeatures[i, j] = islandTrainFeatures[i]
                 else:
                     trainFeatures[i, j] = numberTrainFeatures[i, j - 2]
+
+        for i in range(self.testLength):
+            for j in range(12):
+                if j == 0:
+                    testFeatures[i, j] = shadeTestFeatures[i]
+                elif j == 1:
+                    testFeatures[i, j] = islandTestFeatures[i]
+                else:
                     testFeatures[i, j] = numberTestFeatures[i, j - 2]
 
         return trainFeatures, testFeatures
@@ -130,18 +144,36 @@ def processData(data):
     return trainSamples, testSamples, labels
 
 
+def gridSearch(trainSet, labels):
+    hyperparameterSpace = {'n_estimators': [10, 50, 100, 250, 500], 
+                           'criterion': ["gini", "entropy"],
+                           'max_depth': [10, 50, 100, None],
+                           'min_samples_split': [2, 4, 6, 8, 10],
+                           'min_samples_leaf': [1, 2, 3, 4, 5],
+                           'max_features': ["auto", "log2", 2, 5, 10],
+                           'max_leaf_nodes': [None, 10, 25, 50],
+                           'class_weight': ["balanced", "balanced_subsample", None]}
+    randomForest = RandomForestClassifier(n_jobs=1)
+    gridSearch = GridSearchCV(randomForest, param_grid=hyperparameterSpace, scoring='accuracy', cv=10, verbose=3, n_jobs=1)
+    gridSearch.fit(trainSet, labels)
+    print("Best parameters:", gridSearch.best_params_)
+    print("Best mean accuracy:", gridSearch.best_score_)
+
 if __name__ == "__main__":
-    trainSamples, testSamples, labels = processData(np.loadtxt("mfeat-pix.txt", dtype='i'))  # 2000 rows, 240 columns
+    trainSet, validationSet, labels = processData(np.loadtxt("mfeat-pix.txt", dtype='i'))  # 2000 rows, 240 columns
 
-    featureMaker = FeatureMaker(np.zeros((15,16), dtype=int), trainSamples, testSamples)
+    featureMaker = FeatureMaker(np.zeros((15,16), dtype=int), trainSet, [])
 
-    trainFeatures, testFeatures = featureMaker.createFeatureVectors()
+    featureMaker.createMeanImages(trainSet)
 
-    X = trainFeatures  # The training set, which was transformed to feature vectors
-    Y = labels  # The classes of the training set
-    clf = RandomForestClassifier(n_estimators=100, bootstrap=True, oob_score=True)  # 500 trees in the forest
-    clf = clf.fit(X, Y)  # Make the tree
+    trainSet, _ = featureMaker.createFeatureVectors()
 
-    print("Out-of-bag score:", clf.oob_score_)
-    predictions = clf.predict(testFeatures)  # Predict the classes of the testing set
-    print("Accuracy:", metrics.accuracy_score(labels, predictions))  # Compare the predicted and the true classes
+    clf = RandomForestClassifier(n_estimators=100, bootstrap=True, oob_score=True)  # 100 trees in the forest
+
+    gridSearch(trainSet, labels)
+
+    #scores = cross_val_score(clf, trainSet, labels, cv = 10)
+    #print(scores)
+    #print("Mean accuracy:", scores.mean())
+    #print("Standard devtiation:", scores.std())
+    #print("Accuracy:", metrics.accuracy_score(y_test, predictions))  # Compare the predicted and the true classes
