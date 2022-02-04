@@ -8,7 +8,7 @@ errors_train = []
 losses_train = []
 errors_val = []
 losses_val = []
-with open("epoch_search_v2_2.csv") as csv_file:
+with open("epoch_search_1_run2.csv") as csv_file:
     csv_reader = csv.reader(csv_file, delimiter = ',')
     
     for line_count, row in enumerate(csv_reader):
@@ -30,8 +30,8 @@ with open("epoch_search_v2_2.csv") as csv_file:
 
 
 
-plt.plot(num_epochs, losses_train, label= "training loss")
-plt.plot(num_epochs, losses_val, label= "validation loss")
+plt.plot(num_epochs[3:-1], errors_train[3:-1], label= "training loss")
+plt.plot(num_epochs[3:-1], errors_val[3:-1], label= "validation loss")
 plt.xticks(range(1, 101, 5))
 plt.title("One run with 100 epochs")
 plt.legend()
