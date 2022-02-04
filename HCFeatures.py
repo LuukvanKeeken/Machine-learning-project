@@ -24,6 +24,8 @@ class HCFeatures():
         featureVector.append(self.featureLaplacian(image.copy()))
         featureVector.append(self.featureFourier(image.copy()))
         featureVector.append(self.featureVerticalPolyRow(image.copy()))
+        #featureVector.append(self.featureDiagonalUp(image.copy()))
+        #featureVector.append(self.featureDiagonalDot(image.copy()))
         featureVector.append(self.featureMoG(image.copy()))
         featureVector.append(self.featureMeanShade(image.copy()))
         featureVector.extend(self.featureMeanNumber(image.copy()))
@@ -34,11 +36,11 @@ class HCFeatures():
     def featureHorizontalSymmetry(self, image, xParameter):
         image[image >= 20] = 255
         image[image < 20] = 0
-        width, height = np.shape(image)
+        height, width = np.shape(image)
         pixelsLeft = 0
         pixelsRight = 0
-        for i in range(width):
-            for j in range(height):
+        for i in range(height):
+            for j in range(width):
                 if image[i,j] == 0:
                     if i < xParameter:
                         pixelsLeft += 1
@@ -122,13 +124,10 @@ class HCFeatures():
 
     def featureFourier(self, image):
         dft = cv2.dft(np.float32(image),flags = cv2.DFT_COMPLEX_OUTPUT)
-        dft_shift = np.fft.fftshift(dft)
-        magnitude_spectrum = 20*np.log(cv2.magnitude(dft_shift[:,:,0],dft_shift[:,:,1]))
-        magnitude_spectrum = np.clip(magnitude_spectrum,0,1000)
-        result = float(np.average(magnitude_spectrum))/255
-        result -= 0.5
-        result *= 10
-        result += 0.4
+        #magnitude_spectrum = 20*np.log(cv2.magnitude(dft[:,:,0],dft[:,:,1])+1e-15)
+        magnitude_spectrum = np.log(1+cv2.magnitude(dft[:,:,0],dft[:,:,1]))
+        result = float(np.average(magnitude_spectrum))
+        result -=6
         return result
 
     def featureVerticalPolyRow(self,image):
@@ -179,6 +178,8 @@ class HCFeatures():
 
     def featureMeanShade(self, image):
         result = np.average(image)
+        result -= 66
+        result *=0.01
         return result
 
     def featureMeanNumber(self, image):
@@ -219,7 +220,7 @@ class HCFeatures():
                                 tol=1e-10, # only effect when 0
                                 reg_covar=1e-10, #default: 1e-06 
                                 max_iter=100, 
-                                n_init=2, # higher is better change on good model
+                                n_init=1, # higher is better change on good model
                                 init_params='kmeans', 
                                 weights_init=None, 
                                 means_init=None, 

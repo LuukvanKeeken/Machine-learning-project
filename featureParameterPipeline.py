@@ -2,11 +2,12 @@ from re import I, L
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 import math
 from create_data import DataSets
 from HCFeatures import HCFeatures
+from matplotlib.ticker import MaxNLocator
+import string
 
 class featurePipeline():
 
@@ -69,6 +70,8 @@ class featurePipeline():
             axi.set_xlabel('value')
             axi.set_ylabel('counts')
             axi.set_xlim(0, maxValue)
+            axi.yaxis.set_major_locator(MaxNLocator(integer=True))
+            axi.text(-0.1, 1.1, string.ascii_uppercase[i], transform=axi.transAxes, size=20, weight='bold')
 
             
             #for featureResult in experimentResult: 
@@ -82,18 +85,21 @@ class featurePipeline():
                 digit =  featureResult[i]
                 values = np.histogram(digit, bins, (0.0, maxValue))[0]
                 if np.max(values) > maxY:
-                    maxY = np.max(values)
+                    maxY = np.max(values)  
                 axi.plot(x, values, label = str(i))
-                axi.legend()
-            
-                #axi.grid(True)
+                       
+                handles, labels = axi.get_legend_handles_labels()
+
+        plt.legend(handles = handles, labels = labels, loc='upper center', 
+             bbox_to_anchor=(-1.5, -0.2),fancybox=False, shadow=False,
+             ncol=10)
             
         #for i, axi in enumerate(ax.flat):
         #    axi.set_ylim(0, maxY)
         # for i in [2, 3]:
         #     plt.delaxes(ax.flatten()[i])
         #plt.legend()
-        plt.tick_params(axis='both', which='major', labelsize=5)
+        #plt.tick_params(axis='both', which='major', labelsize=5)
         
         plt.savefig("HCfeatures.png", dpi = 300, bbox_inches='tight') # when saving, specify the DPI
         #plt.show()
@@ -126,11 +132,29 @@ class featurePipeline():
             features = HCFeatures()
             features.fit(trainingData)
 
-            testingX, testingY = createData.digits_testing()
+            trainingX, _ = trainingData
 
-            for _, predictX in enumerate(testingX):
+            #testingX, testingY = createData.digits_testing()
+            featuresResult = np.zeros((18, 10,100))
+            for index, predictX in enumerate(trainingX):
+                digit = int(index/100)
+                number = index - digit*100
                 featureVector = features.predict(predictX)
-                print()
+                featuresResult[:, digit, number] = featureVector
+
+
+            experimentResults.append(["Horizontal symmetry x=3",featuresResult[0]])
+            experimentResults.append(["Horizontal symmetry x=8",featuresResult[1]])
+            experimentResults.append(["Islands",featuresResult[2]])
+            experimentResults.append(["Laplacian",featuresResult[3]])
+            experimentResults.append(["Fourier",featuresResult[4]])
+            experimentResults.append(["Regression on row averages",featuresResult[5]])
+            experimentResults.append(["Mixture of Gaussians",featuresResult[6]])
+            experimentResults.append(["Average pixels value",featuresResult[7]])
+
+
+            self.plotExperimentResult(experimentResults)
+        
 
             featuresResult = np.zeros((7, 10,100))
             for j in range(100):

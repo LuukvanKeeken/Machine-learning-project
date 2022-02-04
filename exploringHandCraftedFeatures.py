@@ -8,6 +8,8 @@ from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 import scipy.stats as stats
 import math 
+from matplotlib.ticker import MaxNLocator
+from matplotlib.figure import Figure
 #import tensorflow as tf
 #from tensorflow.keras import datasets, layers, models
 
@@ -69,11 +71,36 @@ class handCrafted():
         #data = pca.fit_transform(self.training_data)
         #data = scaledData #self.training_data
 
-        #n_components = np.arange(14, 30, 1)
-        #models = [GaussianMixture(n, covariance_type='full', random_state=0) for n in n_components]
-        #aics = [model.fit(data).aic(data) for model in models]
+        n_components = np.arange(10, 41, 1)
+        models = [GaussianMixture(n_components=n,
+                                covariance_type='full', 
+                                tol=0.001, # only effect when 0
+                                reg_covar=1e-6, #default: 1e-06 
+                                max_iter=100, 
+                                n_init=1, # higher is better change on good model
+                                init_params='kmeans', 
+                                weights_init=None, 
+                                means_init=None, 
+                                precisions_init=None, 
+                                random_state=None, 
+                                warm_start=False, 
+                                verbose=1,
+                                verbose_interval=10) for n in n_components]
+
+        aics = [model.fit(data).aic(data) for model in models]
+        fig = plt.figure()
+        ax = fig.gca()
+        ax.set_xlim(10,40)
+        ax.plot(n_components, aics)
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         #plt.plot(n_components, aics)
-        #plt.show()
+        plt.title("AIC per number of components")
+        plt.xlabel('Number of components')
+        plt.ylabel('AIC')
+        #plt.xaxis.set_major_locator(MaxNLocator(integer=True))
+        plt.savefig("AIC.png", dpi = 300, bbox_inches='tight')
+        plt.show()
 
         components = 20
         gmm = GaussianMixture(n_components=components,
