@@ -28,12 +28,14 @@ def build_model(n_filters=32, n_layers=3, act='relu', f_size=(2,2), reg=None, pa
 
     # Add layers with appropriate number of filters
     for i in r:
-        model.add(layers.Conv2D(n_filters * 2 ** i, f_size, activation=act, padding=pad))
+        #model.add(layers.Conv2D(n_filters * 2 ** i, f_size, activation=act, padding=pad))
+        model.add(layers.Conv2D(n_filters, f_size, activation=act, padding=pad))
         model.add(layers.MaxPooling2D(f_size, padding=pad))
 
     # Add output layers
     model.add(layers.Flatten())
-    model.add(layers.Dense(n_filters * 2 ** i, activation=act, activity_regularizer=reg))
+    #model.add(layers.Dense(n_filters * 2 ** i, activation=act, activity_regularizer=reg))
+    model.add(layers.Dense(n_filters, activation=act, activity_regularizer=reg))
     model.add(layers.Dense(10))
 
     model.compile(optimizer='adam',
@@ -150,24 +152,29 @@ def test_overfitting(model, x_train, y_train, x_test, y_test, e=25, v=0):
 def main():
     datasets = DataSets()
     #x_train, y_train, x_val, y_val = datasets.digits_noise(n_copies=4)
-    x_train, y_train = datasets.digits_rot(n_copies=10, rot_range=(-10,10))
-    #x_train, y_train, x_val, y_val = datasets.digits_standard()
+    #x_train, y_train = datasets.digits_rot(n_copies=1, rot_range=(-10,10))
+    x_train, y_train = datasets.digits_standard()
+
+    #x_test, y_test = datasets.digits_testing()
 
     # Reshape to work with tf models
     x_train = np.reshape(x_train, (len(x_train), 16, 15))
     #x_test = np.reshape(x_test, (len(x_test), 16, 15))
 
-    #x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.5, random_state=1)
+    x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.7, random_state=1)
 
     f_range = list(range(1, 10 + 1, 1))
     # Zero padding is introduced for testing layer sizes > 3
-    model = build_model(n_filters=32, n_layers=2, pad='valid')
+    # n_filters is the amount of filters in the conv layers AS WELL as the amount of nodes in dense layer
+    model = build_model(n_filters=8, n_layers=3, pad='valid')
 
-    #test_overfitting(model, x_train, y_train, x_test, y_test, e=50, v=1)
+    
+
+    test_overfitting(model, x_train, y_train, x_test, y_test, e=400, v=1)
     #test_layer_size(f_range, x_train, y_train, x_test, y_test)
-    cross_validation(model, x_train, y_train, k=5, e=20)
+    #cross_validation(model, x_train, y_train, k=10, e=10)
 
-    #model.summary()
+    model.summary()
 
 main()
 
