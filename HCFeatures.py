@@ -1,16 +1,128 @@
 from re import I, L
+from warnings import catch_warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 import math
+import os
+import pickle
+
+mogModelFileName = "./mogModel/mogModel"
 
 class HCFeatures():
     def __init__(self):
+        # then to load the file
         self.mogModel = None
         self.meanImages = None
+
+        if os.path.isfile(mogModelFileName + '.pkl') and os.path.isfile(mogModelFileName+ '_labels.npy') and os.path.isfile(mogModelFileName+ '_accuracy.npy'):
+            with open(mogModelFileName + '.pkl', 'rb') as file:  
+                loaded_gmm = pickle.load(file)
+            labels = np.load(mogModelFileName+ '_labels.npy')
+            accuracy = np.load(mogModelFileName+ '_accuracy.npy')
+            self.mogModel = (loaded_gmm, labels, accuracy)
+            self.trainingRequired = False
+        else:
+            self.trainingRequired = True
+
+
      
+
+
+        # if os.path.isfile(mogModelFileName+ '_labels.npy') and os.path.isfile(mogModelFileName+ '_accuracy.npy') and os.path.isfile(mogModelFileName+ '_means.npy') and os.path.isfile(mogModelFileName+ '_covariances.npy'):
+        #     labels = np.load(mogModelFileName+ '_labels.npy')
+        #     accuracy = np.load(mogModelFileName+ '_accuracy.npy')
+        #     means = np.load(mogModelFileName + '_means.npy')
+        #     covar = np.load(mogModelFileName + '_covariances.npy')
+
+        #     loaded_gmm = GaussianMixture(n_components = 20, covariance_type='full')
+        #     #loaded_gmm = GaussianMixture(GaussianSettings)
+        #     loaded_gmm.precisions_cholesky_ = np.linalg.cholesky(np.linalg.inv(covar))
+        #     loaded_gmm.weights_ = np.load(mogModelFileName + '_weights.npy')
+        #     loaded_gmm.means_ = means
+        #     loaded_gmm.covariances_ = covar
+        #     self.mogModel = (loaded_gmm, labels, accuracy)
+        #     self.trainingRequired = False
+        # else:
+        #     self.trainingRequired = True
+    
+    # Fitting and training models
+    # def fit(self, dataset):
+    #     self.trainMeanImages(dataset)
+    #     self.trainMoG(dataset)
+
+    def trainMeanImages(self, dataset):
+        datasetX, _ = dataset
+        self.meanImages = np.zeros((240, 10))
+        for i in range(10):
+            for j in range(240):
+                self.meanImages[j, i] = np.mean(datasetX[i * 100:(i + 1) * 100, j])
+                
+    def trainMoG(self, dataset):
+        datasetX, datasetY = dataset
+        datasetX *= int(255/datasetX.max())
+        datasetX = datasetX.astype(np.uint8)
+        
+        #gmm = templateMoG
+        components = 20
+        gmm = GaussianMixture(n_components=components,
+                                covariance_type='full', 
+                                tol=1e-10, # only effect when 0
+                                reg_covar=1e-10, #default: 1e-06  best 1e-10
+                                max_iter=100, 
+                                n_init=20, # higher is better change on good model
+                                init_params='kmeans', 
+                                weights_init=None, 
+                                means_init=None, 
+                                precisions_init=None, 
+                                random_state=None, 
+                                warm_start=False, 
+                                verbose=0,
+                                verbose_interval=10)
+        gmm.fit(datasetX) 
+        
+        # find labels by the model
+        labels = np.zeros((components, 10))
+        for i in range(1000):
+            realLabel = datasetY[i]
+            image = datasetX[i]
+            image = image.reshape(1,-1)
+            classPredictions = int(gmm.predict(image))
+            labels[classPredictions][realLabel] += 1
+        modelLabels = [0] * components
+        good = 0
+        for index in range(components):
+            mostCount = np.argmax(labels[index])
+            good += labels[index][mostCount]
+            modelLabels[index] = mostCount
+        
+        
+        accuracy = good/1000
+
+        if self.mogModel == None:      
+            save = True
+            print("MoG: no model loaded, save this one")
+        elif accuracy > self.mogModel[2]:
+            save = True
+            print("MoG: save model with greater accuracy of " + str(accuracy))
+        else:
+            save = False
+
+        if save:
+            with open(mogModelFileName + '.pkl', 'wb') as file:  
+                pickle.dump(gmm, file)
+            self.mogModel = (gmm, modelLabels, accuracy)
+            #np.save(mogModelFileName + '_weights', gmm.weights_, allow_pickle=False)
+            #np.save(mogModelFileName + '_means', gmm.means_, allow_pickle=False)
+            #np.save(mogModelFileName + '_covariances', gmm.covariances_, allow_pickle=False)
+            np.save(mogModelFileName + '_labels', np.array(modelLabels), allow_pickle=False)
+            np.save(mogModelFileName + '_accuracy', accuracy, allow_pickle=False)
+        return
+
+
+     # all features
     def predict(self, predictX):
         image = np.reshape(predictX, (16,15))
         image *= int(255/image.max())
@@ -32,7 +144,6 @@ class HCFeatures():
         
         return featureVector
     
-    # all features
     def featureHorizontalSymmetry(self, image, xParameter):
         image[image >= 20] = 255
         image[image < 20] = 0
@@ -126,6 +237,7 @@ class HCFeatures():
         dft = cv2.dft(np.float32(image),flags = cv2.DFT_COMPLEX_OUTPUT)
         #magnitude_spectrum = 20*np.log(cv2.magnitude(dft[:,:,0],dft[:,:,1])+1e-15)
         magnitude_spectrum = np.log(1+cv2.magnitude(dft[:,:,0],dft[:,:,1]))
+        #result = float(np.average(dft[:,:,0]))
         result = float(np.average(magnitude_spectrum))
         result -=6
         return result
@@ -170,7 +282,7 @@ class HCFeatures():
         return result
 
     def featureMoG(self, image):
-        gmm, modelLabels = self.mogModel
+        gmm, modelLabels, _ = self.mogModel
         image = (255-image)
         image = image.reshape(1,-1)
         prediction = modelLabels[int(gmm.predict(image))]
@@ -183,65 +295,8 @@ class HCFeatures():
         return result
 
     def featureMeanNumber(self, image):
-        #trainFeatures = np.zeros((self.trainLength, 10), dtype=int)
-        # for i in range(self.trainLength):  # Create the training feature vectors using the mean numbers and the training samples
         image = image.flatten()
         meanFeatureVector = np.zeros((10))
         for digit in range(10):
             meanFeatureVector[digit] = np.dot(image, self.meanImages[:, digit])
-            #trainFeatures[i, j] = np.dot(self.trainSamples[i], self.meanImages[:, j])
-
-        # testFeatures = np.zeros((self.testLength , 10), dtype=int)
-        # for i in range(self.testLength):  # Create the testing feature vectors using the mean numbers and the testing samples
-        #     for j in range(10):
-        #         testFeatures[i, j] = np.dot(self.testSamples[i], self.meanImages[:, j])
-
         return meanFeatureVector
-
-    # Fitting and training models
-    def fit(self, dataset):
-        self.trainMeanImages(dataset)
-        self.trainMoG(dataset)
-
-    def trainMeanImages(self, dataset):
-        datasetX, _ = dataset
-        self.meanImages = np.zeros((240, 10))
-        for i in range(10):
-            for j in range(240):
-                self.meanImages[j, i] = np.mean(datasetX[i * 100:(i + 1) * 100, j])
-                
-    def trainMoG(self, dataset):
-        datasetX, datasetY = dataset
-        datasetX *= int(255/datasetX.max())
-        datasetX = datasetX.astype(np.uint8)
-        components = 20
-        gmm = GaussianMixture(n_components=components,
-                                covariance_type='full', 
-                                tol=1e-10, # only effect when 0
-                                reg_covar=1e-10, #default: 1e-06 
-                                max_iter=100, 
-                                n_init=1, # higher is better change on good model
-                                init_params='kmeans', 
-                                weights_init=None, 
-                                means_init=None, 
-                                precisions_init=None, 
-                                random_state=None, 
-                                warm_start=False, 
-                                verbose=1,
-                                verbose_interval=10)
-        gmm.fit(datasetX) 
-        
-        # find labels by the model
-        labels = np.zeros((components, 10))
-        for i in range(1000):
-            realLabel = datasetY[i]
-            image = datasetX[i]
-            image = image.reshape(1,-1)
-            classPredictions = int(gmm.predict(image))
-            labels[classPredictions][realLabel] += 1
-        modelLabels = [0] * components
-        for index in range(components):
-            mostCount = np.argmax(labels[index])
-            modelLabels[index] = mostCount
-        self.mogModel = gmm, modelLabels
-        return
