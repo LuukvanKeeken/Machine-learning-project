@@ -122,6 +122,7 @@ model.compile(optimizer='adam',
 history = model.fit(training_data, training_labels, epochs = 60)
 scores = model.evaluate(test_data, test_labels)
 
+
 print(f"Error: {(1-scores[1])*100}%")
 print(f"Loss: {scores[0]}")
 
