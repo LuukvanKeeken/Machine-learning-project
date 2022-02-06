@@ -1,14 +1,14 @@
-from re import I, L
+#from re import I, L
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-from sklearn.mixture import GaussianMixture
+#from sklearn.mixture import GaussianMixture
 import math
 from create_data import DataSets
 from HCFeatures import HCFeatures
 from matplotlib.ticker import MaxNLocator
 import string
-from scipy.interpolate import interp1d
+#from scipy.interpolate import interp1d
 from sklearn import linear_model
 
 class featurePipeline():
@@ -18,14 +18,14 @@ class featurePipeline():
 
     def plotExperimentResult(self,featuresResult):
         experimentResults = []
-        experimentResults.append(["Horizontal symmetry x=3",featuresResult[0]])
-        experimentResults.append(["Horizontal symmetry x=8",featuresResult[1]])
+        experimentResults.append(["Vertical ratio k=3",featuresResult[0]])
+        experimentResults.append(["Vertical ratio k=8",featuresResult[1]])
         experimentResults.append(["Islands",featuresResult[2]])
         experimentResults.append(["Laplacian",featuresResult[3]])
         experimentResults.append(["Fourier",featuresResult[4]])
         experimentResults.append(["Regression on row averages",featuresResult[5]])
         experimentResults.append(["Mixture of Gaussians",featuresResult[6]])
-        experimentResults.append(["Average pixels value",featuresResult[7]])
+        experimentResults.append(["Mean brightness",featuresResult[7]])
 
         plots = len(experimentResults)
         int(plots/2)
@@ -130,11 +130,10 @@ class featurePipeline():
         return featureVector
 
     def linearRegressionPixels(self, trainingData, testingData):
-        trainingX, trainingY = trainingData
-
         # training on training data
+        trainingX, trainingY = trainingData
         pixelRegressionModel = linear_model.LinearRegression() 
-        #LinRegr = linear_model.Ridge(alpha=5.0) 
+        #pixelRegressionModel = linear_model.Ridge(alpha=alpha) 
         pixelRegressionModel.fit(trainingX, trainingY)
 
         # testing on testing data
@@ -149,7 +148,6 @@ class featurePipeline():
         print("Error of linear regression on pixels is " + str(error))
         self.plotClassificationResult(missclassifiedDigits, len(testingX), "Error linear regression on pixels", "classificationLinearRegression.png")
 
-
     def linearRegressionHC(self, features, trainingData, testingData):
         # training on training features
         trainingFeature, trainingY = trainingData
@@ -158,7 +156,7 @@ class featurePipeline():
         
         # testing on testing data
         testingX, testingY  = testingData
-        missclassifiedDigits = np.zeros(10)  
+        missclassifiedDigits = np.zeros(10)
         for index, predictX in enumerate(testingX):
             featureVector = self.featureVectorToDummyVariables(np.array(features.predict(predictX)))
             featureVector = featureVector.reshape(1, -1)
@@ -186,7 +184,6 @@ class featurePipeline():
             print("error no model for MoG")
             #features.trainMoG(trainingData)
 
-        
         # linear regression on pixels
         self.linearRegressionPixels(trainingData, testingData)
 
@@ -202,7 +199,6 @@ class featurePipeline():
             featuresResult[:, digit, number] = featureVector
             regressionX[index] = self.featureVectorToDummyVariables(featureVector)
             regressionY[index] = digit
-
 
         # linear regression on the HC features
         featureTrainingData = regressionX, regressionY

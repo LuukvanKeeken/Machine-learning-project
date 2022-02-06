@@ -27,32 +27,6 @@ class HCFeatures():
         else:
             self.trainingRequired = True
 
-
-     
-
-
-        # if os.path.isfile(mogModelFileName+ '_labels.npy') and os.path.isfile(mogModelFileName+ '_accuracy.npy') and os.path.isfile(mogModelFileName+ '_means.npy') and os.path.isfile(mogModelFileName+ '_covariances.npy'):
-        #     labels = np.load(mogModelFileName+ '_labels.npy')
-        #     accuracy = np.load(mogModelFileName+ '_accuracy.npy')
-        #     means = np.load(mogModelFileName + '_means.npy')
-        #     covar = np.load(mogModelFileName + '_covariances.npy')
-
-        #     loaded_gmm = GaussianMixture(n_components = 20, covariance_type='full')
-        #     #loaded_gmm = GaussianMixture(GaussianSettings)
-        #     loaded_gmm.precisions_cholesky_ = np.linalg.cholesky(np.linalg.inv(covar))
-        #     loaded_gmm.weights_ = np.load(mogModelFileName + '_weights.npy')
-        #     loaded_gmm.means_ = means
-        #     loaded_gmm.covariances_ = covar
-        #     self.mogModel = (loaded_gmm, labels, accuracy)
-        #     self.trainingRequired = False
-        # else:
-        #     self.trainingRequired = True
-    
-    # Fitting and training models
-    # def fit(self, dataset):
-    #     self.trainMeanImages(dataset)
-    #     self.trainMoG(dataset)
-
     def trainMeanImages(self, dataset):
         datasetX, _ = dataset
         self.meanImages = np.zeros((240, 10))
@@ -130,21 +104,19 @@ class HCFeatures():
         image = (255-image)
         featureVector = []
         
-        featureVector.append(self.featureHorizontalSymmetry(image.copy(), xParameter = 3))
-        featureVector.append(self.featureHorizontalSymmetry(image.copy(), xParameter = 8))
+        featureVector.append(self.featureVerticalRatio(image.copy(), xParameter = 3))
+        featureVector.append(self.featureVerticalRatio(image.copy(), xParameter = 8))
         featureVector.append(self.featureIslands(image.copy()))
         featureVector.append(self.featureLaplacian(image.copy()))
         featureVector.append(self.featureFourier(image.copy()))
         featureVector.append(self.featureVerticalPolyRow(image.copy()))
-        #featureVector.append(self.featureDiagonalUp(image.copy()))
-        #featureVector.append(self.featureDiagonalDot(image.copy()))
         featureVector.append(self.featureMoG(image.copy()))
         featureVector.append(self.featureMeanShade(image.copy()))
         featureVector.extend(self.featureMeanNumber(image.copy()))
         
         return featureVector
     
-    def featureHorizontalSymmetry(self, image, xParameter):
+    def featureVerticalRatio(self, image, yParameter):
         image[image >= 20] = 255
         image[image < 20] = 0
         height, width = np.shape(image)
@@ -153,7 +125,7 @@ class HCFeatures():
         for i in range(height):
             for j in range(width):
                 if image[i,j] == 0:
-                    if i < xParameter:
+                    if i < yParameter:
                         pixelsLeft += 1
                     else:
                         pixelsRight += 1
