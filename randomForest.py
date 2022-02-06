@@ -55,7 +55,7 @@ if __name__ == "__main__":
     scores = cross_val_score(clf, trainingFeatureVectors, trainLabels, cv = 10, n_jobs=6)
     print("10-fold cross validation score:", scores.mean())
 
-    '''
+    ''' Uncomment this to find the best random state for the model
     maxScore = scores.mean()
     maxStd = scores.std()
     bestRandom = 0
@@ -70,11 +70,14 @@ if __name__ == "__main__":
             print("New Best accuracy:", maxScore, "New Best Random state:", bestRandom)
 
     print("Best accuracy:", maxScore, "Random state:", bestRandom)
-
+    '''
     # gridSearch(trainingFeatureVectors, trainLabels)
-    # Calculate importance of the features for the training set
-    featureImportances = np.zeros(18)
 
+    # Calculate importance of the features for the training set
+    '''
+    featureImportances = np.zeros(18)
+    
+    
     for i in range(10):
         X_train, X_test, y_train, y_test = train_test_split(trainingFeatureVectors, trainLabels)
         clf.fit(X_train, y_train)
@@ -82,6 +85,7 @@ if __name__ == "__main__":
 
     print(featureImportances/10)
     '''
+
     # Try the model on the testing set
     dataSet = createData.digits_testing()
     testSet = createData.test_data
@@ -96,6 +100,7 @@ if __name__ == "__main__":
     clf2.fit(trainingFeatureVectors, trainLabels)
     predictions = clf2.predict(testFeatureVectors)
 
+    # Print the missclassified numbers
     for i in range(len(predictions)):
         if testLabels[i] != predictions[i]:
             print(f"{testLabels[i]} misclassified as a {predictions[i]}")
@@ -104,12 +109,16 @@ if __name__ == "__main__":
             ax = sns.heatmap(digit, cmap='gray_r')
             plt.show()
 
+    # Print the accuracy
     print("Accuracy:", metrics.accuracy_score(testLabels, predictions))
+
+    # Plot the confusion matrix
     cm = confusion_matrix(testLabels, predictions)
     disp = ConfusionMatrixDisplay(cm)
     disp.plot()
     disp.ax_.set_title("Random Forest confusion matrix")
     plt.show()
     
+    # Plot part of tree 125
     tree.plot_tree(clf2.estimators_[125], feature_names = ["Horizontal Symmetry x = 3", "Horizontal Symmetry x = 8", "Islands", "Laplacian", "Fourier", "Vertical Poly Row", "Mixture of Gaussians", "Mean Shade", "Similarity to 0", "Similarity to 1", "Similarity to 2", "Similarity to 3", "Similarity to 4", "Similarity to 5", "Similarity to 6", "Similarity to 7", "Similarity to 8", "Similarity to 9"], class_names = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"], filled = True, max_depth=2, fontsize=15)
     plt.show()
