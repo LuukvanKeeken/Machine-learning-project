@@ -40,17 +40,18 @@ class featurePipeline():
             experimentName = experimentResults[i][0]
             featureResult = experimentResults[i][1]
             maxValue = np.max(featureResult)
+            minValue = np.min(featureResult)
             axi.set_title(experimentName)
             axi.set_xlabel('value')
             axi.set_ylabel('counts')
-            axi.set_xlim(0, maxValue)
+            axi.set_xlim(minValue, maxValue)
             axi.yaxis.set_major_locator(MaxNLocator(integer=True))
             axi.text(-0.1, 1.1, string.ascii_uppercase[i], transform=axi.transAxes, size=20, weight='bold')
             bins = 50
-            x = np.linspace(0.0, maxValue, bins)           
+            x = np.linspace(minValue, maxValue, bins)           
             for i in range(10):
                 digit =  featureResult[i]
-                values = np.histogram(digit, bins, (0.0, maxValue))[0]
+                values = np.histogram(digit, bins, (minValue, maxValue))[0]
                 if np.max(values) > maxY:
                     maxY = np.max(values)  
                 axi.plot(x, values, label = str(i))                 
