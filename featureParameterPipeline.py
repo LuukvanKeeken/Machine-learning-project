@@ -119,7 +119,7 @@ class featurePipeline():
             featureVector[2] = 0
 
         # MoG feature = 6
-        prediction = featureVector[6]*10
+        prediction = featureVector[6]
         appendVector = np.zeros(9)
         if prediction == 0:
             featureVector[6] = 1

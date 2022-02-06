@@ -29,6 +29,8 @@ class HCFeatures():
 
     def trainMeanImages(self, dataset):
         datasetX, _ = dataset
+        # datasetX *= int(255/datasetX.max())
+        # datasetX = datasetX.astype(np.uint8)
         self.meanImages = np.zeros((240, 10))
         for i in range(10):
             for j in range(240):
@@ -95,24 +97,26 @@ class HCFeatures():
             np.save(mogModelFileName + '_accuracy', accuracy, allow_pickle=False)
         return
 
-
      # all features
     def predict(self, predictX):
+        defaultImage = predictX.copy()
         image = np.reshape(predictX, (16,15))
         image *= int(255/image.max())
         image.astype(np.uint8)
         image = (255-image)
         featureVector = []
         
-        featureVector.append(self.featureVerticalRatio(image.copy(), xParameter = 3))
-        featureVector.append(self.featureVerticalRatio(image.copy(), xParameter = 8))
+        featureVector.append(self.featureVerticalRatio(image.copy(), yParameter = 3))
+        featureVector.append(self.featureVerticalRatio(image.copy(), yParameter = 8))
         featureVector.append(self.featureIslands(image.copy()))
         featureVector.append(self.featureLaplacian(image.copy()))
         featureVector.append(self.featureFourier(image.copy()))
         featureVector.append(self.featureVerticalPolyRow(image.copy()))
         featureVector.append(self.featureMoG(image.copy()))
-        featureVector.append(self.featureMeanShade(image.copy()))
-        featureVector.extend(self.featureMeanNumber(image.copy()))
+        featureVector.append(self.featureMeanBrightness(image.copy()))
+
+        #featureVector.extend(self.featurePrototypeMatching(image.copy()))
+        featureVector.extend(self.featurePrototypeMatching(defaultImage.copy()))
         
         return featureVector
     
@@ -157,14 +161,15 @@ class HCFeatures():
                     # Visit all cells in this island and increment island count
                     self.DFS(i, j)
                     count += 1
-                    islandLocation = (i, j)
-        if count == 1:
-            result = 0
-        elif count == 2:
-            result = 0.5
-            islandLocation
-        else:
-            result = 1
+                    #islandLocation = (i, j)
+        result = count-1
+        # if count == 1:
+        #     result = 0
+        # elif count == 2:
+        #     result = 0.5
+        #     islandLocation
+        # else:
+        #     result = 1
         return result
     def DFS(self, i, j, count = -1):
         if i < 0 or i >= len(self.graph) or j < 0 or j >= len(self.graph[0]) or self.graph[i][j] != 1:
@@ -201,8 +206,8 @@ class HCFeatures():
         laplacianPixels = np.sum(StandardLaplacianImg)
         imageInk = np.sum(255-image)
         ratio = laplacianPixels/imageInk
-        ratio -=0.2
-        ratio *=2
+        # ratio -=0.2
+        # ratio *=2
         return ratio
 
     def featureFourier(self, image):
@@ -211,7 +216,7 @@ class HCFeatures():
         magnitude_spectrum = np.log(1+cv2.magnitude(dft[:,:,0],dft[:,:,1]))
         #result = float(np.average(dft[:,:,0]))
         result = float(np.average(magnitude_spectrum))
-        result -=6
+        #result -=6
         return result
 
     def featureVerticalPolyRow(self,image):
@@ -223,7 +228,7 @@ class HCFeatures():
                 totalValue += image[i,j]
             verticalAverages[i] = int(totalValue/width)
         verticalModel = np.polyfit(range(len(verticalAverages)), verticalAverages, 1)   
-        verticalResult = np.arctan(verticalModel[0])/1.5
+        verticalResult = np.arctan(verticalModel[0])#/1.5
         return verticalResult
     
     def featureDiagonalUp(self, image):
@@ -233,7 +238,7 @@ class HCFeatures():
             xPixel = 0 + i
             yPixel = (height-1) - i
             horizontalValues[i] = image[yPixel, xPixel]
-        result = np.average(horizontalValues)/250
+        result = np.average(horizontalValues)#/250
         return result
 
     def featureDiagonalDot(self,image):
@@ -250,7 +255,7 @@ class HCFeatures():
             xPixel = 0 + i
             yPixel = i
             upValues[i] = image[yPixel, xPixel]
-        result = np.dot(downValues, upValues)/600000
+        result = np.dot(downValues, upValues)#/600000
         return result
 
     def featureMoG(self, image):
@@ -258,15 +263,15 @@ class HCFeatures():
         image = (255-image)
         image = image.reshape(1,-1)
         prediction = modelLabels[int(gmm.predict(image))]
-        return prediction/10
+        return prediction#/10
 
-    def featureMeanShade(self, image):
+    def featureMeanBrightness(self, image):
         result = np.average(image)
-        result -= 66
-        result *=0.01
+        # result -= 66
+        # result *=0.01
         return result
 
-    def featureMeanNumber(self, image):
+    def featurePrototypeMatching(self, image):
         image = image.flatten()
         meanFeatureVector = np.zeros((10))
         for digit in range(10):
