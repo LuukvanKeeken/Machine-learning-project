@@ -60,19 +60,50 @@ training_labels = dataset['training_labels']
 test_data = np.reshape(dataset['test_data'], (len(dataset['test_data']), 16, 15))
 test_labels = dataset['test_labels']
 
-num_folds = 40
+# num_folds = 40
 
-kfold = KFold(n_splits=num_folds, shuffle=True)
+# kfold = KFold(n_splits=num_folds, shuffle=True)
 
-fold_num = 1
-error_rates = []
-losses = []
-kernel_reg = 0.0000025
-act_reg = 0.01
-for train, test in kfold.split(training_data, training_labels):
-    print(f"fold: {fold_num}")
+# fold_num = 1
+# error_rates = []
+# losses = []
+# kernel_reg = 0.0000025
+# act_reg = 0.01
+# for train, test in kfold.split(training_data, training_labels):
+#     print(f"fold: {fold_num}")
 
-    model = keras.Sequential([
+#     model = keras.Sequential([
+#         layers.Conv2D(31, (2, 2), activation='relu', input_shape=(16, 15, 1), kernel_regularizer = regularizers.l2(kernel_reg)),
+#         layers.MaxPool2D((2,2)),
+#         layers.Conv2D(62, (2, 2), activation='relu', kernel_regularizer = regularizers.l2(kernel_reg)),
+#         layers.MaxPool2D((2,2)),
+#         layers.Conv2D(62, (2,2), activation='relu', kernel_regularizer = regularizers.l2(kernel_reg)),
+#         layers.Flatten(),
+#         layers.Dense(62, activation='relu', kernel_regularizer = regularizers.l2(kernel_reg)),
+#         layers.Dense(10, activity_regularizer = regularizers.l1(act_reg)),
+#     ])
+
+#     model.compile(optimizer='adam',
+#             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+#             metrics=['accuracy'])
+
+#     history = model.fit(training_data[train], training_labels[train], epochs=30)
+
+#     scores = model.evaluate(training_data[test], [training_labels[test]])
+#     error_rates.append((1-scores[1])*100)
+#     losses.append(scores[0])
+
+#     fold_num += 1
+
+# print(f"Average error rate: {np.mean(error_rates)}, std dev: {np.std(error_rates)}")
+# print(f"Average loss: {np.mean(losses)}, std dev: {np.std(losses)}")
+
+# kernel_reg = 0.00005
+# act_reg = 0.01
+kernel_reg = 0.00001
+act_reg = 0.005
+
+model = keras.Sequential([
         layers.Conv2D(31, (2, 2), activation='relu', input_shape=(16, 15, 1), kernel_regularizer = regularizers.l2(kernel_reg)),
         layers.MaxPool2D((2,2)),
         layers.Conv2D(62, (2, 2), activation='relu', kernel_regularizer = regularizers.l2(kernel_reg)),
@@ -83,41 +114,15 @@ for train, test in kfold.split(training_data, training_labels):
         layers.Dense(10, activity_regularizer = regularizers.l1(act_reg)),
     ])
 
-    model.compile(optimizer='adam',
+
+model.compile(optimizer='adam',
             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
             metrics=['accuracy'])
 
-    history = model.fit(training_data[train], training_labels[train], epochs=30)
+history = model.fit(training_data, training_labels, epochs = 60)
+scores = model.evaluate(test_data, test_labels)
 
-    scores = model.evaluate(training_data[test], [training_labels[test]])
-    error_rates.append((1-scores[1])*100)
-    losses.append(scores[0])
-
-    fold_num += 1
-
-# kernel_reg = 0.0000025
-# act_reg = 0.01
-
-# model = keras.Sequential([
-#         layers.Conv2D(31, (2, 2), activation='relu', input_shape=(16, 15, 1), kernel_regularizer = regularizers.l2(kernel_reg)),
-#         layers.MaxPool2D((2,2)),
-#         layers.Conv2D(62, (2, 2), activation='relu', kernel_regularizer = regularizers.l2(kernel_reg)),
-#         layers.MaxPool2D((2,2)),
-#         layers.Conv2D(62, (2,2), activation='relu', kernel_regularizer = regularizers.l2(kernel_reg)),
-#         layers.Flatten(),
-#         layers.Dense(62, activation='relu', kernel_regularizer = regularizers.l2(kernel_reg), activity_regularizer = regularizers.l1(act_reg)),
-#         layers.Dense(10),
-#     ])
-
-# model.compile(optimizer='adam',
-#             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-#             metrics=['accuracy'])
-
-# history = model.fit(training_data, training_labels, epochs = 30)
-# scores = model.evaluate(test_data, test_labels)
-# print(f"Error: {(1-scores[1])*100}%")
-# print(f"Loss: {scores[0]}")
+print(f"Error: {(1-scores[1])*100}%")
+print(f"Loss: {scores[0]}")
 
 
-print(f"Average error rate: {np.mean(error_rates)}, std dev: {np.std(error_rates)}")
-print(f"Average loss: {np.mean(losses)}, std dev: {np.std(losses)}")

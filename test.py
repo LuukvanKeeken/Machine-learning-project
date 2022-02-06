@@ -30,7 +30,7 @@ import csv
 alphas = []
 errors = []
 losses = []
-with open("scores_K_5_augmented_multiple_alphas.csv") as csv_file:
+with open("weight_and_activity_alphas_more_precise.csv") as csv_file:
     csv_reader = csv.reader(csv_file, delimiter = ',')
     
     for line_count, row in enumerate(csv_reader):

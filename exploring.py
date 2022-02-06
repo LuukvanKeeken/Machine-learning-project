@@ -46,7 +46,7 @@ for i in range(10):
     test = np.reshape(training_data[100*i], (16,15))
     ax = sns.heatmap(test, cmap='gray_r')
     plt.show()
-
+exit()
 # Train a very simple CNN on the training data, validate on the test data.
 training_data, test_data = training_data/6.0, test_data/6.0
 training_data = np.reshape(training_data, (1000, 16, 15))
