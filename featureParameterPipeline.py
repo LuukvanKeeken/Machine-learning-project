@@ -60,7 +60,7 @@ class featurePipeline():
         plt.legend(handles = handles, labels = labels, loc='upper center', 
              bbox_to_anchor=(-1.5, -0.2),fancybox=False, shadow=False,
              ncol=10)
-        plt.savefig("HCfeatures.png", dpi = 300, bbox_inches='tight') # when saving, specify the DPI
+        plt.savefig("./figures/HCfeatures.png", dpi = 300, bbox_inches='tight') # when saving, specify the DPI
   
     def plotFourier(self, image):
         image = np.reshape(image, (16,15))
@@ -85,7 +85,7 @@ class featurePipeline():
         ax.flat[4].plot(xnew, (np.cos(base*2)*7 + np.cos(base*13)*7*2/13)*scale+1)
         ax.flat[5].plot(row)
         ax.flat[5].plot(xnew, (np.cos(base*2)*7 + np.cos(base*13)*7*2/13)*scale+1)
-        plt.savefig("Fourier.png", dpi = 300, bbox_inches='tight')
+        plt.savefig("./figures/Fourier.png", dpi = 300, bbox_inches='tight')
         print()
 
     def plotClassificationResult(self, wrongDigits, totalDigits, title, saveName):
@@ -102,7 +102,7 @@ class featurePipeline():
         plt.title(title)
         plt.xlabel('Digit')
         plt.ylabel('Error percentage')
-        plt.savefig(saveName, dpi = 300, bbox_inches='tight')
+        plt.savefig("./figures/" + saveName, dpi = 300, bbox_inches='tight')
 
     def featureVectorToDummyVariables(self, featureVector):
         # island feature = 2
