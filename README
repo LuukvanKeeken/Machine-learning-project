@@ -1,0 +1,14 @@
+
+Handcrafted features:
+The file HCFeatures.py is the class with all handcrafted features. The class is used by both the decition tree, and the linear regression model.
+- With initializing the class it attempts loading the mixture of Gaussians model from the mogModel folder. 
+- The class supports training the prototype matching feature and the mixture of Gaussians model.
+- With the function predict(predictX), the feature vector of a data point is calculated and returned.
+
+featureParameterPipeline:
+Is used to create plots of the HC features for the report. However, the file also contains the linear regression models on both the pixel of the image and the HC features
+
+
+ToDo:
+split linear regression on pixels from featureParameterPipeline
+split linear regression on HC features from featureParameterPipeline

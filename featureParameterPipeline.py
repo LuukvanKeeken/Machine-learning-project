@@ -1,14 +1,14 @@
-#from re import I, L
+# other classes developed by the project group
+from create_data import DataSets
+from HCFeatures import HCFeatures
+
+# functions
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-#from sklearn.mixture import GaussianMixture
 import math
-from create_data import DataSets
-from HCFeatures import HCFeatures
 from matplotlib.ticker import MaxNLocator
 import string
-#from scipy.interpolate import interp1d
 from sklearn import linear_model
 
 class featurePipeline():
@@ -65,7 +65,7 @@ class featurePipeline():
     def plotFourier(self, image):
         image = np.reshape(image, (16,15))
         image = 6-image
-        row = image[13]#11
+        row = image[13]
         fig, ax = plt.subplots(2, 3, figsize=(8, 5.5))
         fig.subplots_adjust(hspace=0.4, wspace=0.3)
         for i, axi in enumerate(ax.flat):
@@ -134,7 +134,6 @@ class featurePipeline():
         # training on training data
         trainingX, trainingY = trainingData
         pixelRegressionModel = linear_model.LinearRegression() 
-        #pixelRegressionModel = linear_model.Ridge(alpha=alpha) 
         pixelRegressionModel.fit(trainingX, trainingY)
 
         # testing on testing data
@@ -174,7 +173,7 @@ class featurePipeline():
         trainingData = createData.digits_standard()
         testingData = createData.digits_testing()
         
-        # plot examples for report
+        # Create the example plot of the Fourier transformation for report
         self.plotFourier(trainingData[0][640])
 
         # Create instance of handcrafted features
@@ -189,7 +188,7 @@ class featurePipeline():
         self.linearRegressionPixels(trainingData, testingData)
 
         # calculate feature vectors of training data for both visualization as linear regression on HC
-        trainingX, trainingY = trainingData
+        trainingX, _ = trainingData
         regressionX = np.zeros((1000,29))
         regressionY = np.zeros((1000))
         featuresResult = np.zeros((18, 10,100))
@@ -205,20 +204,8 @@ class featurePipeline():
         featureTrainingData = regressionX, regressionY
         self.linearRegressionHC(features, featureTrainingData, testingData)
 
-        # plot the feature results of 
-        self.plotExperimentResult(featuresResult)
-
-        # wrong = 0
-        # for index in range(1000):
-        #     digit = int(index/100)
-        #     number = index - digit*100
-        #     featureVector = regressionX[index]
-        #     dotFeatures = featureVector[8:18]
-        #     classifcation = np.argmin(dotFeatures)
-        #     if classifcation != digit:
-        #         wrong +=1
-
-        
+        # plot the feature results of the training dataset
+        self.plotExperimentResult(featuresResult)     
     
 if __name__ == "__main__":
     program = featurePipeline()
