@@ -101,6 +101,7 @@ class HCFeatures():
     def predict(self, predictX):
         defaultImage = predictX.copy()
         image = np.reshape(predictX, (16,15))
+        reshapedSameColor = image.copy()
         image *= int(255/image.max())
         image.astype(np.uint8)
         image = (255-image)
@@ -108,7 +109,7 @@ class HCFeatures():
         
         featureVector.append(self.featureVerticalRatio(image.copy(), yParameter = 3))
         featureVector.append(self.featureVerticalRatio(image.copy(), yParameter = 8))
-        featureVector.append(self.featureIslands(image.copy()))
+        featureVector.append(self.featureIslands(reshapedSameColor.copy()))
         featureVector.append(self.featureLaplacian(image.copy()))
         featureVector.append(self.featureFourier(image.copy()))
         featureVector.append(self.featureVerticalPolyRow(image.copy()))
@@ -124,33 +125,36 @@ class HCFeatures():
         image[image >= 20] = 255
         image[image < 20] = 0
         height, width = np.shape(image)
-        pixelsLeft = 0
-        pixelsRight = 0
+        pixelsTop = 0
+        pixelsDown = 0
         for i in range(height):
             for j in range(width):
                 if image[i,j] == 0:
                     if i < yParameter:
-                        pixelsLeft += 1
+                        pixelsTop += 1
                     else:
-                        pixelsRight += 1
-        total = pixelsLeft + pixelsRight
-        horizontalSymmetry = (pixelsLeft / total)
-        return horizontalSymmetry
+                        pixelsDown += 1
+        total = pixelsTop + pixelsDown
+        return pixelsTop / total
 
     def featureIslands(self, image):
         # add extra boarder to image
         width, height = np.shape(image)
-        column = 255 * np.ones(height)
-        row = 255 * np.ones((width+2,1))
+        #column = 255 * np.ones(height)
+        column = 0 * np.ones(height)
+        #row = 255 * np.ones((width+2,1))
+        row = 0 * np.ones((width+2,1))
         image = np.vstack((column,image))
         image = np.vstack((image,column))       
         image = np.hstack((image, row))
         image = np.hstack((row,image))
         image = image.astype(np.uint8)
         
-        threshold = 100
-        image[image < threshold] = 0
-        image[image > 0] = 1
+        #threshold = 100
+        threshold = 3
+        image[image < threshold] = 10
+        image[image < 10] = 0
+        image[image == 10] = 1
         self.graph = image.copy()
         
         count = 0
