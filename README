@@ -1,13 +1,34 @@
+from importlib.metadata import files
 
-Handcrafted features:
-The file HCFeatures.py is the class with all handcrafted features. The class is used by both the decition tree, and the linear regression model.
+
+Main files
+    linearRegressionPixels.py
+        calculates linear regression weights on the pixel values.
+
+    linearRegressionHCFeatures.py
+        Calculates the linear regression on the handcrafted feature vectors
+        Some features contain categorical data. With the function featureVectorToDummyVariables() are dummy variables created for the categories in order for linear regression to work.license
+
+
+Used by the main files
+create_data.py
+- class which loads the dataset and splits it into training data and testing data
+- Class also supports augmentation of the data
+
+
+
+HCFeatures.py 
+- is the class with all handcrafted features. The class is used by:
+    - linearRegressionHCFeatures.py
+    - plottingAndTestingFeaturesAndRegression.py
+    - decisionTree
 - With initializing the class it attempts loading the mixture of Gaussians model from the mogModel folder. 
 - The class supports training the prototype matching feature and the mixture of Gaussians model.
 - With the function predict(predictX), the feature vector of a data point is calculated and returned.
 
-featureParameterPipeline:
-Is used to create plots of the HC features for the report. However, the file also contains the linear regression models on both the pixel of the image and the HC features
-
+Optional
+plottingAndTestingFeaturesAndRegression.py:
+- Was used to test features and create the plots for in the report
 
 ToDo:
 split linear regression on pixels from featureParameterPipeline

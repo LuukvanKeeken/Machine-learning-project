@@ -1,4 +1,4 @@
-# other classes developed by the project group
+# Classes developed by the project group
 from create_data import DataSets
 from HCFeatures import HCFeatures
 
@@ -129,24 +129,6 @@ class featurePipeline():
             appendVector[int(prediction-1)] = 1
         featureVector = np.append(featureVector, appendVector)
         return featureVector
-
-    def linearRegressionPixels(self, trainingData, testingData):
-        # training on training data
-        trainingX, trainingY = trainingData
-        pixelRegressionModel = linear_model.LinearRegression() 
-        pixelRegressionModel.fit(trainingX, trainingY)
-
-        # testing on testing data
-        testingX, testingY  = testingData
-        missclassifiedDigits = np.zeros(10)
-        for index, predictX in enumerate(testingX):
-            prediction = pixelRegressionModel.predict(predictX.reshape(1,-1))
-            if np.round(prediction) != testingY[index]:
-                missclassifiedDigits[testingY[index]] +=1
-        
-        error = np.sum(missclassifiedDigits)/len(testingX)
-        print("Error of linear regression on pixels is " + str(error))
-        self.plotClassificationResult(missclassifiedDigits, len(testingX), "Error linear regression on pixels", "classificationLinearRegression.png")
 
     def linearRegressionHC(self, features, trainingData, testingData):
         # training on training features
