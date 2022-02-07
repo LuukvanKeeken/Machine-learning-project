@@ -168,8 +168,6 @@ def main():
     # n_filters is the amount of filters in the conv layers AS WELL as the amount of nodes in dense layer
     model = build_model(n_filters=8, n_layers=3, pad='valid')
 
-    
-
     test_overfitting(model, x_train, y_train, x_test, y_test, e=400, v=1)
     #test_layer_size(f_range, x_train, y_train, x_test, y_test)
     #cross_validation(model, x_train, y_train, k=10, e=10)
